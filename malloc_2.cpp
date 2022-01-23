@@ -12,30 +12,42 @@ metaData* head= nullptr;
 metaData* tail = nullptr;
 
 
-void insertInOrder(metaData* head,metaData* node){
+void insertInOrder(metaData* node){
     metaData* temp = head;
-    while(temp->next){
-        if(temp )
+    if(head > node){
+        node ->next = head;
+        head->prev = node;
+        head = node;
+        return;
     }
+    while(temp->next){
+        if(temp < node && temp->next >= node  ){
+            break;
+        }
+        temp = temp->next;
+    }
+    if(temp->next) {
+        node->next = temp->next;
+        temp->next = node;
+        node->prev = temp;
+        node->next->prev = node;
+    }else{
+        tail->next = node;
+        node ->next = nullptr;
+        node->prev = tail;
+        tail = node;
+    }
+
 }
+
 void* smalloc(size_t size){
     if(size == 0 || size > 1e8 )
         return nullptr;
 
     metaData* itr = head;
     while(itr){
-        if(itr->is_free && itr->size > sizeof(metaData)+ size){
+        if(itr->is_free && itr->size > size){
             itr->is_free = false;
-            if(itr->size - size - sizeof(metaData) > sizeof(metaData)){
-                metaData* temp;
-                temp->is_free = true;
-                temp->size = itr->size - size - 2*sizeof(metaData);
-                tail->next = temp;
-                temp->prev = tail;
-                tail = temp;
-                tail->next = nullptr;
-
-            }
             return itr+sizeof(metaData);
         }
         itr = itr->next;
@@ -43,7 +55,7 @@ void* smalloc(size_t size){
     void* res = sbrk(size);
     if((void*) -1 == res)
         return nullptr;
-    metaData* temp;
+    metaData* temp = new metaData();
     temp->is_free= false;
     temp->size = size;
     temp->next = nullptr;
@@ -52,10 +64,7 @@ void* smalloc(size_t size){
         head = temp;
         tail = temp;
     }else{
-        tail->next = temp;
-        temp->prev = tail;
-        tail = temp;
-        tail->next = nullptr;
+        insertInOrder(temp);
     }
     return res;
 }
@@ -77,3 +86,55 @@ void sfree (void* p){
         return;
     ptr->is_free = true;
 }
+
+void* srealloc(void* oldp,size_t size){
+    if(size == 0 || size > 1e8)
+        return nullptr;
+    if(!oldp){
+        return smalloc(size);
+    }
+    metaData* ptr = (metaData*)oldp- sizeof(metaData);
+    if(size > ptr->size ){
+        void* newptr = smalloc(size);
+        if(!newptr)
+            return nullptr;
+
+        memcpy(newptr,oldp,ptr->size);
+        sfree(oldp);
+        return newptr;
+    }
+    return oldp;
+}
+
+size_t _num_free_blocks(){
+    size_t counter = 0;
+
+    metaData* ptr = head;
+    while(ptr){
+        counter += ptr->is_free;
+        ptr = ptr->next;
+    }
+    return counter;
+}
+
+size_t _num_free_bytes(){
+    size_t free_bytes=0;
+    metaData* ptr = head;
+    while(ptr){
+        free_bytes += (ptr->is_free)* ptr->size;
+        ptr = ptr->next;
+    }
+    return free_bytes;
+}
+
+size_t _num_allocated_blocks(){
+    size_t counter = 0;
+    metaData* ptr = head;
+
+    while(ptr){
+        counter ++;
+        ptr = ptr->next;
+    }
+    return counter;
+}
+
