@@ -93,6 +93,9 @@
 		<Unit filename="/home/student/CLionProjects/HW4OS/malloc_2.cpp">
 			<Option target="HW4OS"/>
 		</Unit>
+		<Unit filename="/home/student/CLionProjects/HW4OS/malloc_3.cpp">
+			<Option target="HW4OS"/>
+		</Unit>
 		<Unit filename="/home/student/CLionProjects/HW4OS/CMakeLists.txt">
 			<Option virtualFolder="CMake Files\"/>
 		</Unit>

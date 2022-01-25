@@ -11,6 +11,7 @@ set(CMAKE_DEPENDS_CHECK_CXX
   "/home/student/CLionProjects/HW4OS/main.cpp" "/home/student/CLionProjects/HW4OS/cmake-build-debug/CMakeFiles/HW4OS.dir/main.cpp.o"
   "/home/student/CLionProjects/HW4OS/malloc_1.cpp" "/home/student/CLionProjects/HW4OS/cmake-build-debug/CMakeFiles/HW4OS.dir/malloc_1.cpp.o"
   "/home/student/CLionProjects/HW4OS/malloc_2.cpp" "/home/student/CLionProjects/HW4OS/cmake-build-debug/CMakeFiles/HW4OS.dir/malloc_2.cpp.o"
+  "/home/student/CLionProjects/HW4OS/malloc_3.cpp" "/home/student/CLionProjects/HW4OS/cmake-build-debug/CMakeFiles/HW4OS.dir/malloc_3.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 

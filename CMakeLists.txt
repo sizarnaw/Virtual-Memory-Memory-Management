@@ -3,4 +3,4 @@ project(HW4OS)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(HW4OS main.cpp malloc_1.cpp malloc_2.cpp)
+add_executable(HW4OS main.cpp malloc_1.cpp malloc_2.cpp malloc_3.cpp)

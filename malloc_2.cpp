@@ -52,7 +52,7 @@ void* smalloc(size_t size){
         }
         itr = itr->next;
     }
-    void* res = sbrk(size);
+    void* res = sbrk(size + sizeof(metaData));
     if((void*) -1 == res)
         return nullptr;
     metaData* temp = new metaData();
@@ -66,7 +66,7 @@ void* smalloc(size_t size){
     }else{
         insertInOrder(temp);
     }
-    return res;
+    return (metaData*)res+sizeof(metaData);
 }
 
 void* scalloc(size_t num,size_t size){
@@ -138,3 +138,16 @@ size_t _num_allocated_blocks(){
     return counter;
 }
 
+size_t _num_meta_data_bytes(){
+    size_t counter = 0;
+    metaData* ptr = head;
+    while(ptr){
+        counter ++;
+        ptr = ptr->next;
+    }
+    return counter*sizeof(metaData);
+}
+
+size_t _size_meta_data(){
+    return (size_t)sizeof(metaData);
+}

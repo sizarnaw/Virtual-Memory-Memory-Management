@@ -2,6 +2,7 @@ file(REMOVE_RECURSE
   "CMakeFiles/HW4OS.dir/main.cpp.o"
   "CMakeFiles/HW4OS.dir/malloc_1.cpp.o"
   "CMakeFiles/HW4OS.dir/malloc_2.cpp.o"
+  "CMakeFiles/HW4OS.dir/malloc_3.cpp.o"
   "HW4OS"
   "HW4OS.pdb"
 )

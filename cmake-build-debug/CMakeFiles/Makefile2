@@ -81,12 +81,12 @@ clean: CMakeFiles/HW4OS.dir/clean
 CMakeFiles/HW4OS.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/HW4OS.dir/build.make CMakeFiles/HW4OS.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/HW4OS.dir/build.make CMakeFiles/HW4OS.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/student/CLionProjects/HW4OS/cmake-build-debug/CMakeFiles --progress-num=1,2,3,4 "Built target HW4OS"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/student/CLionProjects/HW4OS/cmake-build-debug/CMakeFiles --progress-num=1,2,3,4,5 "Built target HW4OS"
 .PHONY : CMakeFiles/HW4OS.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/HW4OS.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/student/CLionProjects/HW4OS/cmake-build-debug/CMakeFiles 4
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/student/CLionProjects/HW4OS/cmake-build-debug/CMakeFiles 5
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/HW4OS.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/student/CLionProjects/HW4OS/cmake-build-debug/CMakeFiles 0
 .PHONY : CMakeFiles/HW4OS.dir/rule

@@ -201,6 +201,30 @@ malloc_2.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/HW4OS.dir/build.make CMakeFiles/HW4OS.dir/malloc_2.cpp.s
 .PHONY : malloc_2.cpp.s
 
+malloc_3.o: malloc_3.cpp.o
+.PHONY : malloc_3.o
+
+# target to build an object file
+malloc_3.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/HW4OS.dir/build.make CMakeFiles/HW4OS.dir/malloc_3.cpp.o
+.PHONY : malloc_3.cpp.o
+
+malloc_3.i: malloc_3.cpp.i
+.PHONY : malloc_3.i
+
+# target to preprocess a source file
+malloc_3.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/HW4OS.dir/build.make CMakeFiles/HW4OS.dir/malloc_3.cpp.i
+.PHONY : malloc_3.cpp.i
+
+malloc_3.s: malloc_3.cpp.s
+.PHONY : malloc_3.s
+
+# target to generate assembly for a file
+malloc_3.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/HW4OS.dir/build.make CMakeFiles/HW4OS.dir/malloc_3.cpp.s
+.PHONY : malloc_3.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -219,6 +243,9 @@ help:
 	@echo "... malloc_2.o"
 	@echo "... malloc_2.i"
 	@echo "... malloc_2.s"
+	@echo "... malloc_3.o"
+	@echo "... malloc_3.i"
+	@echo "... malloc_3.s"
 .PHONY : help
 
 
