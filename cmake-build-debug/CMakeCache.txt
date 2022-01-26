@@ -159,7 +159,7 @@ CMAKE_PROJECT_DESCRIPTION:STATIC=
 CMAKE_PROJECT_HOMEPAGE_URL:STATIC=
 
 //Value Computed by CMake
-CMAKE_PROJECT_NAME:STATIC=HW4OS
+CMAKE_PROJECT_NAME:STATIC=OS_Wet4
 
 //Path to a program.
 CMAKE_RANLIB:FILEPATH=/usr/bin/ranlib
@@ -228,6 +228,12 @@ HW4OS_BINARY_DIR:STATIC=/home/student/CLionProjects/HW4OS/cmake-build-debug
 
 //Value Computed by CMake
 HW4OS_SOURCE_DIR:STATIC=/home/student/CLionProjects/HW4OS
+
+//Value Computed by CMake
+OS_Wet4_BINARY_DIR:STATIC=/home/student/CLionProjects/HW4OS/cmake-build-debug
+
+//Value Computed by CMake
+OS_Wet4_SOURCE_DIR:STATIC=/home/student/CLionProjects/HW4OS
 
 //Path to a program.
 ProcessorCount_cmd_nproc:FILEPATH=/usr/bin/nproc

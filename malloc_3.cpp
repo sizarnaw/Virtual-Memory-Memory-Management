@@ -2,7 +2,10 @@
 #include <cstdio>
 #include <unistd.h>
 #include <cstring>
+#include <iostream>
 #include <sys/mman.h>
+#include "malloc_3.h"
+bool debug = false;
 struct metaData {
     size_t size;
     bool is_free;
@@ -26,7 +29,7 @@ int entryIndex(size_t size) {
 
 metaData *getTail(metaData *head) {
     metaData *temp = head;
-    while (temp->next) {
+    while (temp && temp->next) {
         temp = temp->next;
     }
     return temp;
@@ -165,11 +168,13 @@ bool dataInHeap(metaData* ptr){
 }
 
 void *smalloc(size_t size) {
-    if (size == 0 || size > 1e8)
+    if(debug)
+        std::cout << "\n***********size in malloc: " << size << std::endl;
+    if (size == 0 || size > 100000000)
         return nullptr;
     size_t bin = entryIndex(size);
-    metaData *head = bins[bin];
-    metaData *tail = getTail(head);
+    //metaData *head = bins[bin];
+    //metaData *tail = getTail(head);
 
     if(bin > 127){ //use mmap
         void* p = mmap(NULL,size + sizeof(metaData), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
@@ -191,10 +196,14 @@ void *smalloc(size_t size) {
             mmapHead = data;
         }
 
+        unsigned long long temp = (unsigned long long)data;
+        temp += sizeof(metaData);
+        return (void*)temp;
+
         return data + sizeof(metaData);
     }
-    for(; bin < 128; bin++){
-        metaData* itr = bins[bin];
+    for(int i = bin; i < 128; i++){
+        metaData* itr = bins[i];
         while (itr) {
             if (itr->is_free && itr->size > size) {
                 itr->is_free = false;
@@ -209,6 +218,10 @@ void *smalloc(size_t size) {
                     insertInOrder(new_meta);
                     insertToHeap(new_meta);
                 }
+                unsigned long long temp = (unsigned long long)itr;
+                temp += sizeof(metaData);
+                return (void*)temp;
+
                 return itr + sizeof(metaData);
             }
             itr = itr->next;
@@ -228,14 +241,22 @@ void *smalloc(size_t size) {
             insertToHeap(meta);
             insertInOrder(meta);
             wilderness = meta;
+            unsigned long long temp = (unsigned long long)wilderness;
+            temp += sizeof(metaData);
+            return (void*)temp;
+
             return wilderness + sizeof(metaData);
         } else {
             if(size > wilderness->size)
                 if((void*)-1 == sbrk(size - wilderness->size))
                     return nullptr;
             wilderness->size = size;
+            wilderness->is_free = false;
         }
-        return wilderness + sizeof(metaData);
+        unsigned long long temp = (unsigned long long)wilderness;
+        temp += sizeof(metaData);
+        return (void*)temp;
+        //return wilderness + sizeof(metaData);
     }
     metaData *res = (metaData *) sbrk(size + sizeof(metaData));
     if ((void *) -1 == res)
@@ -248,9 +269,11 @@ void *smalloc(size_t size) {
     res->nextInHeap = nullptr;
 
     wilderness = res;
+    metaData *head = bins[bin];
+    metaData *tail = getTail(head);
 
     if (!head) {
-        head = res;
+        bins[entryIndex(size)] = res;
         tail = res;
     } else {
         insertInOrder(res);
@@ -260,11 +283,17 @@ void *smalloc(size_t size) {
     } else {
         insertToHeap(res);
     }
-    return (metaData *) res + sizeof(metaData);
+    unsigned long long temp = (unsigned long long)res;
+    temp += sizeof(metaData);
+    return (void*)temp;
+    //return (metaData *) res + sizeof(metaData);
 }
 
 void *scalloc(size_t num, size_t size) {
-    if (size == 0 || size * num > 1e8)
+    if(debug)
+        std::cout << "\n***********size in scalloc: " << size << std::endl;
+
+    if (size == 0 || size * num > 100000000)
         return nullptr;
     void *ptr = smalloc(num * size);
     if (!ptr)
@@ -275,17 +304,20 @@ void *scalloc(size_t num, size_t size) {
 void sfree(void *p) {
     if (!p)
         return;
-    metaData *ptr = (metaData *) p - sizeof(metaData);
+    metaData *ptr = (metaData *) p;// - sizeof(metaData);
+    ptr--;
+    if(debug)
+        std::cout << "***********freeing: " << ptr->size << std::endl;
+    //std::cout << "\nfree " << ptr->size << std::endl;
     if (ptr->is_free)
         return;
     ptr->is_free = true;
     if(dataInHeap(ptr)){
         merge(ptr->prevInHeap, (metaData *) merge(ptr, ptr->nextInHeap));
-    } else
-    {
+        removeNodeFromMMap(ptr, true);
+    } else {
         removeNodeFromMMap(ptr, false);
-        if (munmap((void *)ptr, ptr->size + sizeof(metaData)) == 1)
-        {
+        if (ptr->size >= 128 && munmap((void *)ptr, ptr->size + sizeof(metaData)) == 1) {
             perror("Munmap Failed:");
         }
     }
@@ -312,7 +344,9 @@ void* allocDataAndSplit(metaData* node, size_t size){
 }
 
 void *srealloc(void *oldp, size_t size) {
-    if (size == 0 || size > 1e8)
+    if(debug)
+        std::cout << "1111111111111111111111111read " << size << std::endl;
+    if (size == 0 || size > 100000000)
         return nullptr;
     if (!oldp) {
         return smalloc(size);
@@ -381,8 +415,8 @@ void *srealloc(void *oldp, size_t size) {
 
 void* getHeapHead(){
     metaData* res = wilderness;
-    while(res->prev){
-        res = res->prev;
+    while(res->prevInHeap){
+        res = res->prevInHeap;
     }
     return res;
 }
@@ -406,20 +440,22 @@ size_t _num_free_bytes(){
     }
     return c;
 }
-
+int in = 0;
 size_t _num_allocated_blocks(){
+    if(debug)
+        std::cout << "sex: " << in++ << std::endl;
     metaData* ptr = (metaData*)getHeapHead();
     size_t heapSize = 0, mmapSize = 0;
     while(ptr){
-        ptr = ptr->next;
         heapSize++;
+        ptr = ptr->nextInHeap;
     }
     ptr = mmapHead;
     while(ptr){
         ptr = ptr->next;
         mmapSize++;
     }
-    return mmapSize + heapSize;
+    return /*mmapSize +*/ heapSize;
 }
 
 size_t _num_allocated_bytes(){
@@ -427,14 +463,14 @@ size_t _num_allocated_bytes(){
     size_t heapSize = 0, mmapSize = 0;
     while(ptr){
         heapSize += ptr->size;
-        ptr = ptr->next;
+        ptr = ptr->nextInHeap;
     }
     ptr = mmapHead;
     while(ptr){
         mmapSize += ptr->size;
         ptr = ptr->next;
     }
-    return mmapSize + heapSize;
+    return /*mmapSize +*/ heapSize;
 }
 
 size_t _size_meta_data() {
@@ -442,5 +478,5 @@ size_t _size_meta_data() {
 }
 
 size_t _num_meta_data_bytes(){
-    return _size_meta_data() * _num_allocated_blocks();
+    return _size_meta_data() * (_num_allocated_blocks());
 }

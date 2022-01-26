@@ -65,16 +65,6 @@ CMAKE_BINARY_DIR = /home/student/CLionProjects/HW4OS/cmake-build-debug
 #=============================================================================
 # Targets provided globally by CMake.
 
-# Special rule for the target edit_cache
-edit_cache:
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "No interactive CMake dialog available..."
-	/home/student/Desktop/clion/clion-2021.2.3/bin/cmake/linux/bin/cmake -E echo No\ interactive\ CMake\ dialog\ available.
-.PHONY : edit_cache
-
-# Special rule for the target edit_cache
-edit_cache/fast: edit_cache
-.PHONY : edit_cache/fast
-
 # Special rule for the target rebuild_cache
 rebuild_cache:
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
@@ -84,6 +74,16 @@ rebuild_cache:
 # Special rule for the target rebuild_cache
 rebuild_cache/fast: rebuild_cache
 .PHONY : rebuild_cache/fast
+
+# Special rule for the target edit_cache
+edit_cache:
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "No interactive CMake dialog available..."
+	/home/student/Desktop/clion/clion-2021.2.3/bin/cmake/linux/bin/cmake -E echo No\ interactive\ CMake\ dialog\ available.
+.PHONY : edit_cache
+
+# Special rule for the target edit_cache
+edit_cache/fast: edit_cache
+.PHONY : edit_cache/fast
 
 # The main all target
 all: cmake_check_build_system
@@ -117,96 +117,24 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named HW4OS
+# Target rules for targets named OS_Wet4
 
 # Build rule for target.
-HW4OS: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 HW4OS
-.PHONY : HW4OS
+OS_Wet4: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 OS_Wet4
+.PHONY : OS_Wet4
 
 # fast build rule for target.
-HW4OS/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/HW4OS.dir/build.make CMakeFiles/HW4OS.dir/build
-.PHONY : HW4OS/fast
-
-main.o: main.cpp.o
-.PHONY : main.o
-
-# target to build an object file
-main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/HW4OS.dir/build.make CMakeFiles/HW4OS.dir/main.cpp.o
-.PHONY : main.cpp.o
-
-main.i: main.cpp.i
-.PHONY : main.i
-
-# target to preprocess a source file
-main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/HW4OS.dir/build.make CMakeFiles/HW4OS.dir/main.cpp.i
-.PHONY : main.cpp.i
-
-main.s: main.cpp.s
-.PHONY : main.s
-
-# target to generate assembly for a file
-main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/HW4OS.dir/build.make CMakeFiles/HW4OS.dir/main.cpp.s
-.PHONY : main.cpp.s
-
-malloc_1.o: malloc_1.cpp.o
-.PHONY : malloc_1.o
-
-# target to build an object file
-malloc_1.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/HW4OS.dir/build.make CMakeFiles/HW4OS.dir/malloc_1.cpp.o
-.PHONY : malloc_1.cpp.o
-
-malloc_1.i: malloc_1.cpp.i
-.PHONY : malloc_1.i
-
-# target to preprocess a source file
-malloc_1.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/HW4OS.dir/build.make CMakeFiles/HW4OS.dir/malloc_1.cpp.i
-.PHONY : malloc_1.cpp.i
-
-malloc_1.s: malloc_1.cpp.s
-.PHONY : malloc_1.s
-
-# target to generate assembly for a file
-malloc_1.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/HW4OS.dir/build.make CMakeFiles/HW4OS.dir/malloc_1.cpp.s
-.PHONY : malloc_1.cpp.s
-
-malloc_2.o: malloc_2.cpp.o
-.PHONY : malloc_2.o
-
-# target to build an object file
-malloc_2.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/HW4OS.dir/build.make CMakeFiles/HW4OS.dir/malloc_2.cpp.o
-.PHONY : malloc_2.cpp.o
-
-malloc_2.i: malloc_2.cpp.i
-.PHONY : malloc_2.i
-
-# target to preprocess a source file
-malloc_2.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/HW4OS.dir/build.make CMakeFiles/HW4OS.dir/malloc_2.cpp.i
-.PHONY : malloc_2.cpp.i
-
-malloc_2.s: malloc_2.cpp.s
-.PHONY : malloc_2.s
-
-# target to generate assembly for a file
-malloc_2.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/HW4OS.dir/build.make CMakeFiles/HW4OS.dir/malloc_2.cpp.s
-.PHONY : malloc_2.cpp.s
+OS_Wet4/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/OS_Wet4.dir/build.make CMakeFiles/OS_Wet4.dir/build
+.PHONY : OS_Wet4/fast
 
 malloc_3.o: malloc_3.cpp.o
 .PHONY : malloc_3.o
 
 # target to build an object file
 malloc_3.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/HW4OS.dir/build.make CMakeFiles/HW4OS.dir/malloc_3.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/OS_Wet4.dir/build.make CMakeFiles/OS_Wet4.dir/malloc_3.cpp.o
 .PHONY : malloc_3.cpp.o
 
 malloc_3.i: malloc_3.cpp.i
@@ -214,7 +142,7 @@ malloc_3.i: malloc_3.cpp.i
 
 # target to preprocess a source file
 malloc_3.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/HW4OS.dir/build.make CMakeFiles/HW4OS.dir/malloc_3.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/OS_Wet4.dir/build.make CMakeFiles/OS_Wet4.dir/malloc_3.cpp.i
 .PHONY : malloc_3.cpp.i
 
 malloc_3.s: malloc_3.cpp.s
@@ -222,8 +150,32 @@ malloc_3.s: malloc_3.cpp.s
 
 # target to generate assembly for a file
 malloc_3.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/HW4OS.dir/build.make CMakeFiles/HW4OS.dir/malloc_3.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/OS_Wet4.dir/build.make CMakeFiles/OS_Wet4.dir/malloc_3.cpp.s
 .PHONY : malloc_3.cpp.s
+
+test.o: test.cpp.o
+.PHONY : test.o
+
+# target to build an object file
+test.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/OS_Wet4.dir/build.make CMakeFiles/OS_Wet4.dir/test.cpp.o
+.PHONY : test.cpp.o
+
+test.i: test.cpp.i
+.PHONY : test.i
+
+# target to preprocess a source file
+test.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/OS_Wet4.dir/build.make CMakeFiles/OS_Wet4.dir/test.cpp.i
+.PHONY : test.cpp.i
+
+test.s: test.cpp.s
+.PHONY : test.s
+
+# target to generate assembly for a file
+test.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/OS_Wet4.dir/build.make CMakeFiles/OS_Wet4.dir/test.cpp.s
+.PHONY : test.cpp.s
 
 # Help Target
 help:
@@ -233,19 +185,13 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... HW4OS"
-	@echo "... main.o"
-	@echo "... main.i"
-	@echo "... main.s"
-	@echo "... malloc_1.o"
-	@echo "... malloc_1.i"
-	@echo "... malloc_1.s"
-	@echo "... malloc_2.o"
-	@echo "... malloc_2.i"
-	@echo "... malloc_2.s"
+	@echo "... OS_Wet4"
 	@echo "... malloc_3.o"
 	@echo "... malloc_3.i"
 	@echo "... malloc_3.s"
+	@echo "... test.o"
+	@echo "... test.i"
+	@echo "... test.s"
 .PHONY : help
 
 

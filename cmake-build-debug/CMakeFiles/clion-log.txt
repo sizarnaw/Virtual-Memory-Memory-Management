@@ -1,4 +1,6 @@
 /home/student/Desktop/clion/clion-2021.2.3/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_DEPENDS_USE_COMPILER=FALSE -G "CodeBlocks - Unix Makefiles" /home/student/CLionProjects/HW4OS
+cp: cannot create regular file '/home/student/CLionProjects/HW4OS/test_compile/malloc_3.cpp': No such file or directory
+-- Build as Segel pass
 -- Configuring done
 -- Generating done
 -- Build files have been written to: /home/student/CLionProjects/HW4OS/cmake-build-debug

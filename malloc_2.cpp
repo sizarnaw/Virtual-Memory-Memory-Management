@@ -7,6 +7,8 @@ struct metaData{
     bool is_free;
     metaData* next;
     metaData* prev;
+    metaData* prev1;
+    metaData* prev11;
 };
 metaData* head= nullptr;
 metaData* tail = nullptr;
