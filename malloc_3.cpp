@@ -5,21 +5,24 @@
 #include <iostream>
 #include <sys/mman.h>
 #include "malloc_3.h"
+#include "assert.h"
+
+#define MAX_KB 128*1024
 bool debug = false;
 struct metaData {
     size_t size;
     bool is_free;
-    metaData *next;
-    metaData *prev;
     metaData *nextInHeap;
     metaData *prevInHeap;
+    metaData *next;
+    metaData *prev;
 };
 
 metaData *bins[128]; //sorted by size
 metaData *heap; //sorted by address
 
-metaData* mmapHead = nullptr;
-metaData* mmapTail = nullptr;
+metaData *mmapHead = nullptr;
+metaData *mmapTail = nullptr;
 
 metaData *wilderness = nullptr;
 
@@ -94,56 +97,44 @@ void removeNodeFromHeap(metaData *node, bool del) {
     if (node->next) {
         node->next->prev = node->prev;
     }
-    if (del)
-        delete node;
+
 }
 
-void removeNodeFromBins(metaData *node, bool del) {
+void removeNodeFromBins(metaData *node) {
     if (node == bins[entryIndex(node->size)]) {
         bins[entryIndex(node->size)] = node->next;
-        if (del)
-            delete node;
         return;
     }
-
     node->prev->next = node->next;
     if (node->next)
         node->next->prev = node->prev;
-    if (del)
-        delete node;
+
 }
 
-void removeNodeFromMMap(metaData* node, bool del){
-    if(mmapHead && mmapTail && mmapHead == mmapTail){
-        if(node == mmapHead){
+void removeNodeFromMMap(metaData *node, bool del) {
+    if (mmapHead && mmapTail && mmapHead == mmapTail) {
+        if (node == mmapHead) {
             mmapTail = nullptr;
             mmapHead = nullptr;
-            if(del)
-                delete node;
+
             return;
         }
     }
-    for(metaData* ptr = mmapHead; ptr; ptr = ptr->next){
-        if(ptr == node){
-            if(ptr->prev && ptr->next){
+    for (metaData *ptr = mmapHead; ptr; ptr = ptr->next) {
+        if (ptr == node) {
+            if (ptr->prev && ptr->next) {
                 ptr->prev->next = ptr->next;
                 ptr->next->prev = ptr->prev;
-                if(del)
-                    delete node;
                 return;
             }
-            if(ptr->next){
+            if (ptr->next) {
                 ptr->next->prev = nullptr;
                 mmapHead = ptr->next;
-                if(del)
-                    delete node;
                 return;
             }
-            if(ptr->prev){
+            if (ptr->prev) {
                 ptr->prev->next = nullptr;
                 mmapTail = ptr->prev;
-                if(del)
-                    delete node;
             }
         }
     }
@@ -151,24 +142,34 @@ void removeNodeFromMMap(metaData* node, bool del){
 }
 
 void *merge(metaData *head, metaData *next) {
-    if (head + head->size + sizeof(metaData) == next) {
-        if (next == wilderness)
-            wilderness = head;
-        head->size += next->size + sizeof(metaData);
-        removeNodeFromHeap(next, false);
-        removeNodeFromBins(next, true);
-        removeNodeFromBins(head, false);
-        insertInOrder(head);
+    if (!head && next) {
+        return next;
+    } else if (head && !next) {
+        return head;
+    } else if (!head && !next) {
+        return nullptr;
     }
+    if (!next->is_free || !head->is_free) {
+        return head;
+    }
+    //if (head + head->size + sizeof(metaData) == next) {
+    if (next == wilderness)
+        wilderness = head;
+    head->size += next->size + sizeof(metaData);
+    removeNodeFromHeap(next, false);
+    removeNodeFromBins(next);
+    removeNodeFromBins(head);
+    insertInOrder(head);
+    //}
     return head;
 }
 
-bool dataInHeap(metaData* ptr){
-    return ptr->size > 128;
+bool dataInHeap(metaData *ptr) {
+    return ptr->size < 128 * 1024;
 }
 
 void *smalloc(size_t size) {
-    if(debug)
+    if (debug)
         std::cout << "\n***********size in malloc: " << size << std::endl;
     if (size == 0 || size > 100000000)
         return nullptr;
@@ -176,39 +177,39 @@ void *smalloc(size_t size) {
     //metaData *head = bins[bin];
     //metaData *tail = getTail(head);
 
-    if(bin > 127){ //use mmap
-        void* p = mmap(NULL,size + sizeof(metaData), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-        if ((void*)-1 == p) {
+    if (bin > 127) { //use mmap
+        void *p = mmap(NULL, size + sizeof(metaData), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+        if ((void *) -1 == p) {
             return NULL;
         }
 
-        metaData* data = (metaData*)p;
+        metaData *data = (metaData *) p;
         data->size = size;
         data->is_free = false;
 
-        if(mmapTail){
+        if (mmapTail) {
             mmapTail->next = data;
             data->prev = mmapTail;
         }
         mmapTail = data;
 
-        if(!mmapHead){
+        if (!mmapHead) {
             mmapHead = data;
         }
 
-        unsigned long long temp = (unsigned long long)data;
+        unsigned long long temp = (unsigned long long) data;
         temp += sizeof(metaData);
-        return (void*)temp;
+        return (void *) temp;
 
         return data + sizeof(metaData);
     }
-    for(int i = bin; i < 128; i++){
-        metaData* itr = bins[i];
+    for (int i = bin; i < 128; i++) {
+        metaData *itr = bins[i];
         while (itr) {
             if (itr->is_free && itr->size > size) {
                 itr->is_free = false;
                 if (itr->size > size + sizeof(metaData) + 128) {
-                    removeNodeFromBins(itr, false);
+                    removeNodeFromBins(itr);
                     size_t origSize = itr->size;
                     itr->size = size;
                     insertInOrder(itr);
@@ -218,9 +219,9 @@ void *smalloc(size_t size) {
                     insertInOrder(new_meta);
                     insertToHeap(new_meta);
                 }
-                unsigned long long temp = (unsigned long long)itr;
+                unsigned long long temp = (unsigned long long) itr;
                 temp += sizeof(metaData);
-                return (void*)temp;
+                return (void *) temp;
 
                 return itr + sizeof(metaData);
             }
@@ -231,7 +232,7 @@ void *smalloc(size_t size) {
     if (wilderness && wilderness->is_free) {
         if (wilderness->size > size + sizeof(metaData) + 128) {
             //split
-            removeNodeFromBins(wilderness, false);
+            removeNodeFromBins(wilderness);
             size_t origSize = wilderness->size;
             wilderness->size = size;
             wilderness->is_free = false;
@@ -241,21 +242,27 @@ void *smalloc(size_t size) {
             insertToHeap(meta);
             insertInOrder(meta);
             wilderness = meta;
-            unsigned long long temp = (unsigned long long)wilderness;
+            unsigned long long temp = (unsigned long long) wilderness;
             temp += sizeof(metaData);
-            return (void*)temp;
+            return (void *) temp;
 
             return wilderness + sizeof(metaData);
         } else {
-            if(size > wilderness->size)
-                if((void*)-1 == sbrk(size - wilderness->size))
+            if (size > wilderness->size)
+                if ((void *) -1 == sbrk(size - wilderness->size))
                     return nullptr;
+            removeNodeFromBins(wilderness);
             wilderness->size = size;
             wilderness->is_free = false;
+            if(bins[entryIndex(wilderness->size)])
+                insertInOrder(wilderness);
+            else
+                bins[entryIndex(wilderness->size)] = wilderness;
+
         }
-        unsigned long long temp = (unsigned long long)wilderness;
+        unsigned long long temp = (unsigned long long) wilderness;
         temp += sizeof(metaData);
-        return (void*)temp;
+        return (void *) temp;
         //return wilderness + sizeof(metaData);
     }
     metaData *res = (metaData *) sbrk(size + sizeof(metaData));
@@ -283,14 +290,14 @@ void *smalloc(size_t size) {
     } else {
         insertToHeap(res);
     }
-    unsigned long long temp = (unsigned long long)res;
-    temp += sizeof(metaData);
-    return (void*)temp;
+    unsigned long long temp = (unsigned long long) res;
+    temp += _size_meta_data();
+    return (void *) temp;
     //return (metaData *) res + sizeof(metaData);
 }
 
 void *scalloc(size_t num, size_t size) {
-    if(debug)
+    if (debug)
         std::cout << "\n***********size in scalloc: " << size << std::endl;
 
     if (size == 0 || size * num > 100000000)
@@ -301,41 +308,93 @@ void *scalloc(size_t num, size_t size) {
     return memset(ptr, 0, num * size);
 }
 
+metaData *mergePrev(metaData *p) {
+    if (!p)
+        return nullptr;
+    if (!p->prevInHeap)
+        return p;
+
+    metaData *prev = p->prevInHeap;
+
+    if (prev->is_free) {
+        bool updateWilderness = p == wilderness;
+        prev->nextInHeap = p->nextInHeap;
+        if (p->nextInHeap)
+            p->nextInHeap->prevInHeap = prev;
+        removeNodeFromBins(p);
+        prev->size += (sizeof(metaData) + p->size);
+        if (updateWilderness)
+            wilderness = prev;
+        return prev;
+    }
+    return p;
+}
+
+metaData *mergeNext(metaData *p) {
+    if (!p)
+        return nullptr;
+    if (!p->nextInHeap)
+        return p;
+
+    metaData *next = p->nextInHeap;
+    if (next->is_free) {
+        bool updateWilderness = next == wilderness;
+        p->nextInHeap = next->nextInHeap;
+        if (next->nextInHeap)
+            next->nextInHeap->prevInHeap = p;
+        removeNodeFromBins(next);
+        p->size += (sizeof(metaData) + next->size);
+        if (updateWilderness)
+            wilderness = p;
+    }
+    return p;
+}
+
+
 void sfree(void *p) {
     if (!p)
         return;
     metaData *ptr = (metaData *) p;// - sizeof(metaData);
     ptr--;
-    if(debug)
+    if (debug)
         std::cout << "***********freeing: " << ptr->size << std::endl;
     //std::cout << "\nfree " << ptr->size << std::endl;
     if (ptr->is_free)
         return;
     ptr->is_free = true;
-    if(dataInHeap(ptr)){
-        merge(ptr->prevInHeap, (metaData *) merge(ptr, ptr->nextInHeap));
-        removeNodeFromMMap(ptr, true);
+    if (dataInHeap(ptr)) {
+        removeNodeFromBins(ptr);
+        metaData *temp = mergePrev(ptr);
+        mergeNext(temp);
+        if(bins[entryIndex(temp->size)])
+            insertInOrder(temp);
+        else
+            bins[entryIndex(temp->size)] = temp;
+        //merge(ptr->prevInHeap, (metaData *) merge(ptr, ptr->nextInHeap));//todo:seperate
+        //removeNodeFromMMap(ptr, true);
     } else {
         removeNodeFromMMap(ptr, false);
-        if (ptr->size >= 128 && munmap((void *)ptr, ptr->size + sizeof(metaData)) == 1) {
+        if (ptr->size >= 128 && munmap((void *) ptr, ptr->size + sizeof(metaData)) == 1) {
             perror("Munmap Failed:");
         }
     }
 }
 
-void* allocDataAndSplit(metaData* node, size_t size){
+void *allocDataAndSplit(metaData *node, size_t size) {
+    if(!node)
+        return nullptr;
     size_t origSize = node->size;
-    removeNodeFromBins(node, false);
+    removeNodeFromBins(node);
     node->size = size;
     node->is_free = false;
-    if(origSize >= node->size + sizeof(metaData) + 128){
+    if (origSize >= node->size + sizeof(metaData) + 128) {
         //split
         metaData *meta = (metaData *) (node + node->size + sizeof(metaData));
         meta->size = origSize - size - sizeof(metaData);
         meta->is_free = true;
         insertInOrder(meta);
         insertToHeap(meta);
-        if(wilderness == node)
+        if (wilderness == node)
             wilderness = meta;
 
     }
@@ -343,42 +402,158 @@ void* allocDataAndSplit(metaData* node, size_t size){
     return node;
 }
 
+void *reallocFilter(metaData *node, size_t size) {
+    if (node->nextInHeap == nullptr) {
+        sbrk(size - node->size);
+        node->size = size;
+        return node;
+    }
+    return nullptr;
+}
+
+metaData *reallocHelperB(metaData *ptr) {
+    if (!ptr->prevInHeap)
+        return ptr;
+    if (!ptr->prevInHeap->is_free)
+        return ptr;
+    return mergePrev(ptr);
+}
+
+metaData *reallocHelperC(metaData *ptr) {
+    if (!ptr->nextInHeap)
+        return ptr;
+    if (!ptr->nextInHeap->is_free)
+        return ptr;
+    return mergeNext(ptr);
+}
+
+int checkPriority(metaData *ptr, size_t size) {
+
+    if (ptr->size >= size)
+        return 1; // A
+    if (ptr->prevInHeap && (ptr->size + ptr->prevInHeap->size >= size))
+        return 2; // B
+    if (ptr->nextInHeap && (ptr->size + ptr->nextInHeap->size >= size)) {
+        return 3; // C
+    }
+    if(ptr->nextInHeap && ptr->prevInHeap && ((ptr->size + ptr->nextInHeap->size + ptr->prevInHeap->size) >= size))
+        return 4;
+
+    return 0;
+
+}
+
 void *srealloc(void *oldp, size_t size) {
-    if(debug)
+    if (size == 0 || size > 100000000)
+        return nullptr;
+    if (!oldp)
+        return smalloc(size);
+    metaData *ptr = (metaData *) oldp;
+    ptr--;
+
+    int res = checkPriority(ptr,size);
+    if(size > MAX_KB){
+        void* ret = smalloc(size);
+        if(!ret)
+            return nullptr;
+        metaData* meta = (metaData*) ret;
+        memcpy(meta,oldp,size);
+        unsigned long long temp = (unsigned long long) meta;
+        temp += sizeof(metaData);
+        sfree(oldp);
+        return (void *) temp;
+    }
+    if(res == 0){
+        void *temp = smalloc(size);
+        if (!temp)
+            return nullptr;
+
+        memcpy(temp, oldp, size);
+        sfree(oldp);
+        return temp;
+    }
+    if(res == 1){
+        return oldp;
+    }
+    if(res == 2){
+        metaData* ret = reallocHelperB(ptr);
+        allocDataAndSplit(ret,size);
+        ret++;
+        memcpy(ret, oldp, size);
+        unsigned long long temp = (unsigned long long) ret;
+        temp += sizeof(metaData);
+        return (void *) temp;
+    }
+    if(res == 3){
+        metaData* ret = reallocHelperC(ptr);
+        allocDataAndSplit(ret,size);
+        ret++;
+        memcpy(ret, oldp, size);
+        unsigned long long temp = (unsigned long long) ret;
+        temp += sizeof(metaData);
+        return (void *) temp;
+    }
+    if(res == 4 ){
+        metaData* sex = ptr->prevInHeap;
+        allocDataAndSplit(sex,size);
+        sex++;
+        memcpy(sex, oldp, size);
+        sfree(oldp);
+        unsigned long long temp = (unsigned long long) sex;
+        temp += sizeof(metaData);
+        return (void *) temp;
+    }
+
+    int najib = 0;
+    assert ( najib != 0 );
+    return nullptr;
+}
+
+/*void *srealloc(void *oldp, size_t size) {
+    if (debug)
         std::cout << "1111111111111111111111111read " << size << std::endl;
     if (size == 0 || size > 100000000)
         return nullptr;
     if (!oldp) {
         return smalloc(size);
     }
-    metaData *ptr = (metaData *) oldp - sizeof(metaData);
-    if(!dataInHeap(ptr)){
-        if(ptr->size == size)
+    metaData *ptr = (metaData *) oldp;
+    ptr--;
+
+    if (!dataInHeap(ptr)) {
+        if (ptr->size == size)
             return oldp;
-        void* temp = smalloc(size);
-        if(!temp)
+
+
+        void *temp = smalloc(size);
+        if (!temp)
             return NULL;
 
         size_t minSize = ptr->size > size ? size : ptr->size;
         memcpy(temp, oldp, minSize);
         sfree(oldp);
         return temp; //todo: maybe + sizeof(metaData);
+
     }
 
     if (size > ptr->size) {
-        if(ptr->prevInHeap && ptr->prevInHeap->size + ptr->size >= size){
-            metaData* temp = ptr->prevInHeap;
-            if(((metaData*)merge(ptr->prevInHeap, ptr))->size >= size){
+        void *res = reallocFilter(ptr, size);
+        if (res)
+            return oldp;
+        if (ptr->prevInHeap && ptr->prevInHeap->size + ptr->size >= size) {
+            metaData *temp = ptr->prevInHeap;
+            if (((metaData *) merge(ptr->prevInHeap, ptr))->size >= size) {
                 return allocDataAndSplit(temp, size);
             }
-        } else if(ptr->nextInHeap && ptr->nextInHeap->size + ptr->size >= size) {
-            metaData* temp = ptr;
-            if(((metaData*)merge(ptr, ptr->next))->size >= size){
+        } else if (ptr->nextInHeap && ptr->nextInHeap->size + ptr->size >= size) {
+            metaData *temp = ptr;
+            if (((metaData *) merge(ptr, ptr->next))->size >= size) {
                 return allocDataAndSplit(temp, size);
             }
-        } else if (ptr->prevInHeap && ptr->nextInHeap && ptr->prevInHeap->size + ptr->nextInHeap->size + ptr->size >= size){
-            metaData* temp = ptr->prevInHeap;
-            if(((metaData*)merge(ptr->prevInHeap, (metaData*)merge(ptr, ptr->nextInHeap)))->size >= size){
+        } else if (ptr->prevInHeap && ptr->nextInHeap &&
+                   ptr->prevInHeap->size + ptr->nextInHeap->size + ptr->size >= size) {
+            metaData *temp = ptr->prevInHeap;
+            if (((metaData *) merge(ptr->prevInHeap, (metaData *) merge(ptr, ptr->nextInHeap)))->size >= size) {
                 return allocDataAndSplit(temp, size);
             }
         }
@@ -392,18 +567,18 @@ void *srealloc(void *oldp, size_t size) {
         return newptr;
     } else {
         //should split
-        if (ptr->size > size + sizeof(metaData) + 128){
+        if (ptr->size > size + sizeof(metaData) + 128) {
             bool updateWild = wilderness == ptr;
 
             size_t origSize = ptr->size;
-            removeNodeFromBins(ptr, false);
+            removeNodeFromBins(ptr);
             ptr->size = size;
             insertInOrder(ptr);
             metaData *meta = (metaData *) (ptr + ptr->size + sizeof(metaData));
             meta->size = origSize - size - sizeof(metaData);
             insertToHeap(meta);
             insertInOrder(meta);
-            if(updateWild)
+            if (updateWild)
                 wilderness = meta;
 
             merge(meta, meta->next);
@@ -411,72 +586,74 @@ void *srealloc(void *oldp, size_t size) {
         }
     }
     return oldp;
-}
+}*/
 
-void* getHeapHead(){
-    metaData* res = wilderness;
-    while(res->prevInHeap){
+void *getHeapHead() {
+    metaData *res = wilderness;
+    while (res->prevInHeap) {
         res = res->prevInHeap;
     }
     return res;
 }
 
-size_t _num_free_blocks(){
+size_t _num_free_blocks() {
     size_t c = 0;
-    metaData* ptr = (metaData*)getHeapHead();
-    while(ptr){
+    metaData *ptr = (metaData *) getHeapHead();
+    while (ptr) {
         c += ptr->is_free;
         ptr = ptr->nextInHeap;
     }
     return c;
 }
 
-size_t _num_free_bytes(){
+size_t _num_free_bytes() {
     size_t c = 0;
-    metaData* ptr = (metaData*)getHeapHead();
-    while(ptr){
+    metaData *ptr = (metaData *) getHeapHead();
+    while (ptr) {
         c += ptr->is_free * ptr->size;
         ptr = ptr->nextInHeap;
     }
     return c;
 }
+
 int in = 0;
-size_t _num_allocated_blocks(){
-    if(debug)
+
+size_t _num_allocated_blocks() {
+    if (debug)
         std::cout << "sex: " << in++ << std::endl;
-    metaData* ptr = (metaData*)getHeapHead();
+    metaData *ptr = (metaData *) getHeapHead();
     size_t heapSize = 0, mmapSize = 0;
-    while(ptr){
+    while (ptr) {
         heapSize++;
         ptr = ptr->nextInHeap;
     }
     ptr = mmapHead;
-    while(ptr){
+    while (ptr) {
         ptr = ptr->next;
         mmapSize++;
     }
-    return /*mmapSize +*/ heapSize;
+    return mmapSize + heapSize;
 }
 
-size_t _num_allocated_bytes(){
-    metaData* ptr = (metaData*)getHeapHead();
+size_t _num_allocated_bytes() {
+    metaData *ptr = (metaData *) getHeapHead();
     size_t heapSize = 0, mmapSize = 0;
-    while(ptr){
+    while (ptr) {
         heapSize += ptr->size;
         ptr = ptr->nextInHeap;
     }
     ptr = mmapHead;
-    while(ptr){
+    while (ptr) {
         mmapSize += ptr->size;
         ptr = ptr->next;
     }
-    return /*mmapSize +*/ heapSize;
+    return mmapSize + heapSize;
 }
 
 size_t _size_meta_data() {
     return (size_t) sizeof(metaData);
 }
 
-size_t _num_meta_data_bytes(){
+size_t _num_meta_data_bytes() {
     return _size_meta_data() * (_num_allocated_blocks());
 }
