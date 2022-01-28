@@ -1,4 +1,3 @@
-
 #include <cstdio>
 #include <unistd.h>
 #include <cstring>
@@ -99,12 +98,25 @@ void removeNodeFromHeap(metaData *node, bool del) {
     }
 
 }
-
+bool existInBins(metaData* node){
+    //expect that head is not nullptr.
+    metaData* temp = bins[entryIndex(node->size)];
+    while(temp){
+        if(temp == node)
+            return true;
+        temp = temp->next;
+    }
+    return false;
+}
 void removeNodeFromBins(metaData *node) {
     if (node == bins[entryIndex(node->size)]) {
         bins[entryIndex(node->size)] = node->next;
         return;
     }
+    if(node->size > MAX_KB)
+        return;
+    //if(!existInBins(node))
+    //    return;
     node->prev->next = node->next;
     if (node->next)
         node->next->prev = node->prev;
@@ -206,17 +218,31 @@ void *smalloc(size_t size) {
     for (int i = bin; i < 128; i++) {
         metaData *itr = bins[i];
         while (itr) {
-            if (itr->is_free && itr->size > size) {
+            if (itr->is_free && itr->size >= size) {
                 itr->is_free = false;
                 if (itr->size > size + sizeof(metaData) + 128) {
                     removeNodeFromBins(itr);
                     size_t origSize = itr->size;
                     itr->size = size;
-                    insertInOrder(itr);
-                    metaData *new_meta = (metaData *) (itr->size + sizeof(metaData));
+                    if(bins[entryIndex(itr->size)]) {
+                        insertInOrder(itr);
+                    }
+                    else {
+                        bins[entryIndex(itr->size)] = itr;
+                        itr->prev = nullptr;
+                    }
+                    unsigned long long temp = (unsigned long long) itr;
+                    temp += (itr->size + sizeof(metaData));
+                    metaData *new_meta = (metaData *) temp;
                     new_meta->size = origSize - size - sizeof(metaData);
                     new_meta->is_free = true;
-                    insertInOrder(new_meta);
+                    if(bins[entryIndex(new_meta->size)]) {
+                        insertInOrder(new_meta);
+                    }
+                    else {
+                        bins[entryIndex(new_meta->size)] = new_meta;
+                        new_meta->prev = nullptr;
+                    }
                     insertToHeap(new_meta);
                 }
                 unsigned long long temp = (unsigned long long) itr;
@@ -254,10 +280,13 @@ void *smalloc(size_t size) {
             removeNodeFromBins(wilderness);
             wilderness->size = size;
             wilderness->is_free = false;
-            if(bins[entryIndex(wilderness->size)])
+            if(bins[entryIndex(wilderness->size)]) {
                 insertInOrder(wilderness);
-            else
+            }
+            else {
                 bins[entryIndex(wilderness->size)] = wilderness;
+                wilderness->prev = nullptr;
+            }
 
         }
         unsigned long long temp = (unsigned long long) wilderness;
@@ -321,8 +350,10 @@ metaData *mergePrev(metaData *p) {
         prev->nextInHeap = p->nextInHeap;
         if (p->nextInHeap)
             p->nextInHeap->prevInHeap = prev;
-        removeNodeFromBins(p);
+        removeNodeFromBins(prev);
         prev->size += (sizeof(metaData) + p->size);
+        //todo: re insert prev to bins
+        //insertInOrder(prev);
         if (updateWilderness)
             wilderness = prev;
         return prev;
@@ -340,8 +371,8 @@ metaData *mergeNext(metaData *p) {
     if (next->is_free) {
         bool updateWilderness = next == wilderness;
         p->nextInHeap = next->nextInHeap;
-        if (next->nextInHeap)
-            next->nextInHeap->prevInHeap = p;
+        //if (next->nextInHeap)
+        //    next->nextInHeap->prevInHeap = p;
         removeNodeFromBins(next);
         p->size += (sizeof(metaData) + next->size);
         if (updateWilderness)
@@ -366,10 +397,14 @@ void sfree(void *p) {
         removeNodeFromBins(ptr);
         metaData *temp = mergePrev(ptr);
         mergeNext(temp);
-        if(bins[entryIndex(temp->size)])
+        if(bins[entryIndex(temp->size)]) {
             insertInOrder(temp);
-        else
+            //bins[entryIndex(temp->size)] = temp;
+        }
+        else {
             bins[entryIndex(temp->size)] = temp;
+            temp->prev = nullptr;
+        }
         //merge(ptr->prevInHeap, (metaData *) merge(ptr, ptr->nextInHeap));//todo:seperate
         //removeNodeFromMMap(ptr, true);
     } else {
@@ -384,12 +419,19 @@ void *allocDataAndSplit(metaData *node, size_t size) {
     if(!node)
         return nullptr;
     size_t origSize = node->size;
-    removeNodeFromBins(node);
-    node->size = size;
+    removeNodeFromBins(node); //todo: delete because we use this function(allocData) after merge that have removeNode.
     node->is_free = false;
-    if (origSize >= node->size + sizeof(metaData) + 128) {
+    if (origSize >= size + sizeof(metaData) + 128) {
+        node->size = size;
         //split
-        metaData *meta = (metaData *) (node + node->size + sizeof(metaData));
+        //todo: check when i put long long it returns errors.
+        //todo: it supposed to be long long but it return errors . TAKE CARE NAJIB!!!!.
+        unsigned long long temp = (unsigned long long) node;
+        temp += sizeof(metaData) + node->size;
+        metaData* meta = (metaData*)(temp);
+        //metaData *meta = (metaData *) (temp + node->size);
+        //metaData *meta = (metaData *) (node+node->size+ sizeof(metaData));
+
         meta->size = origSize - size - sizeof(metaData);
         meta->is_free = true;
         insertInOrder(meta);
@@ -398,8 +440,17 @@ void *allocDataAndSplit(metaData *node, size_t size) {
             wilderness = meta;
 
     }
-    insertInOrder(node);
-    return node;
+    if(bins[entryIndex(node->size)]) {
+        insertInOrder(node);
+    }
+    else {
+        bins[entryIndex(node->size)] = node;
+        node->prev = nullptr;
+    }
+
+    unsigned long long temp = (unsigned long long) node;
+    temp += sizeof(metaData);
+    return (void*)temp;
 }
 
 void *reallocFilter(metaData *node, size_t size) {
@@ -431,12 +482,14 @@ int checkPriority(metaData *ptr, size_t size) {
 
     if (ptr->size >= size)
         return 1; // A
-    if (ptr->prevInHeap && (ptr->size + ptr->prevInHeap->size >= size))
+    if (ptr->prevInHeap && ptr->prevInHeap->is_free && (ptr->size + ptr->prevInHeap->size >= size))
         return 2; // B
-    if (ptr->nextInHeap && (ptr->size + ptr->nextInHeap->size >= size)) {
+    if (ptr->nextInHeap && ptr->nextInHeap->is_free && (ptr->size + ptr->nextInHeap->size >= size)) {
         return 3; // C
     }
-    if(ptr->nextInHeap && ptr->prevInHeap && ((ptr->size + ptr->nextInHeap->size + ptr->prevInHeap->size) >= size))
+    if(ptr->nextInHeap && ptr->prevInHeap &&
+    ptr->nextInHeap->is_free && ptr->prevInHeap->is_free &&
+    ((ptr->size + ptr->nextInHeap->size + ptr->prevInHeap->size) >= size))
         return 4;
 
     return 0;
@@ -464,22 +517,28 @@ void *srealloc(void *oldp, size_t size) {
         return (void *) temp;
     }
     if(res == 0){
+        ptr->is_free = true;
         void *temp = smalloc(size);
         if (!temp)
             return nullptr;
-
         memcpy(temp, oldp, size);
-        sfree(oldp);
+        if(temp != oldp)
+            sfree(oldp);
+
         return temp;
     }
     if(res == 1){
+        allocDataAndSplit(ptr, size);
+        mergeNext(ptr->next);
         return oldp;
     }
     if(res == 2){
         metaData* ret = reallocHelperB(ptr);
         allocDataAndSplit(ret,size);
+        mergeNext(ret->next);
         ret++;
         memcpy(ret, oldp, size);
+        ret--;
         unsigned long long temp = (unsigned long long) ret;
         temp += sizeof(metaData);
         return (void *) temp;
@@ -487,8 +546,10 @@ void *srealloc(void *oldp, size_t size) {
     if(res == 3){
         metaData* ret = reallocHelperC(ptr);
         allocDataAndSplit(ret,size);
+        mergeNext(ret->next);
         ret++;
         memcpy(ret, oldp, size);
+        ret--;
         unsigned long long temp = (unsigned long long) ret;
         temp += sizeof(metaData);
         return (void *) temp;
@@ -496,6 +557,7 @@ void *srealloc(void *oldp, size_t size) {
     if(res == 4 ){
         metaData* sex = ptr->prevInHeap;
         allocDataAndSplit(sex,size);
+        mergeNext(sex->next);
         sex++;
         memcpy(sex, oldp, size);
         sfree(oldp);
@@ -519,23 +581,17 @@ void *srealloc(void *oldp, size_t size) {
     }
     metaData *ptr = (metaData *) oldp;
     ptr--;
-
     if (!dataInHeap(ptr)) {
         if (ptr->size == size)
             return oldp;
-
-
         void *temp = smalloc(size);
         if (!temp)
             return NULL;
-
         size_t minSize = ptr->size > size ? size : ptr->size;
         memcpy(temp, oldp, minSize);
         sfree(oldp);
         return temp; //todo: maybe + sizeof(metaData);
-
     }
-
     if (size > ptr->size) {
         void *res = reallocFilter(ptr, size);
         if (res)
@@ -557,11 +613,9 @@ void *srealloc(void *oldp, size_t size) {
                 return allocDataAndSplit(temp, size);
             }
         }
-
         void *newptr = smalloc(size);
         if (!newptr)
             return nullptr;
-
         memcpy(newptr, oldp, ptr->size);
         sfree(oldp);
         return newptr;
@@ -569,7 +623,6 @@ void *srealloc(void *oldp, size_t size) {
         //should split
         if (ptr->size > size + sizeof(metaData) + 128) {
             bool updateWild = wilderness == ptr;
-
             size_t origSize = ptr->size;
             removeNodeFromBins(ptr);
             ptr->size = size;
@@ -580,7 +633,6 @@ void *srealloc(void *oldp, size_t size) {
             insertInOrder(meta);
             if (updateWild)
                 wilderness = meta;
-
             merge(meta, meta->next);
             return ptr + sizeof(metaData);
         }
