@@ -16,3 +16,4 @@ if (${CMD_ERROR})
 else ()
     MESSAGE(STATUS "Build as Segel pass")
 endif (${CMD_ERROR})
+.
